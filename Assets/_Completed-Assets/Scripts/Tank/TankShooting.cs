@@ -1,5 +1,8 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
+using System.Collections;
+using TanksML;
+
 
 namespace Complete
 {
@@ -22,12 +25,30 @@ namespace Complete
         private float m_ChargeSpeed;                // How fast the launch force increases, based on the max charge time.
         private bool m_Fired;                       // Whether or not the shell has been launched with this button press.
 
+        // tanks-ml tutorial
+        private bool fireButtonDown = false;
+        private bool fireButtonHeld = false;
+        private bool fireButtonUp = false;
+        private ITankAgent agent;
+        [SerializeField] private bool agentControl = false;
+
 
         private void OnEnable()
         {
             // When the tank is turned on, reset the launch force and the UI
             m_CurrentLaunchForce = m_MinLaunchForce;
             m_AimSlider.value = m_MinLaunchForce;
+        }
+
+        
+        private void Awake()
+        {
+            agent = GetComponent<ITankAgent>();
+            if (agent == null)
+            {
+                agentControl = false;
+                Debug.unityLogger.LogWarning("TankMovement", "No agent found");
+            }
         }
 
 
@@ -46,6 +67,48 @@ namespace Complete
             // The slider should have a default value of the minimum launch force.
             m_AimSlider.value = m_MinLaunchForce;
 
+            if (agentControl)
+            {
+                // all this code is just to replicate Input.GetButtonDown, Input.GetButton, and Input.GetButtonUp.
+                // note that we can't replicate a button down and up in the same frame this way
+                fireButtonUp = false;
+                if (agent.GetTankFiredValue() > 0f)
+                {
+                    fireButtonUp = false;
+                    if (fireButtonHeld)
+                    {
+                        fireButtonHeld = true;
+                        fireButtonDown = false;
+                    }
+                    else if (fireButtonDown)
+                    {
+                        fireButtonHeld = true;
+                        fireButtonDown = false;
+                        Debug.unityLogger.Log("fire button held = " + fireButtonHeld);
+                    }
+                    else
+                    {
+                        fireButtonDown = true;
+                    }
+                }
+                else
+                {
+                    if (fireButtonDown || fireButtonHeld)
+                    {
+                        fireButtonUp = true;
+                    }
+                    fireButtonDown = false;
+                    fireButtonHeld = false;
+                }
+
+            }
+            else
+            {
+                fireButtonDown = Input.GetButtonDown(m_FireButton);
+                fireButtonUp = Input.GetButtonUp(m_FireButton);
+                fireButtonHeld = Input.GetButton(m_FireButton);
+            }
+
             // If the max force has been exceeded and the shell hasn't yet been launched...
             if (m_CurrentLaunchForce >= m_MaxLaunchForce && !m_Fired)
             {
@@ -54,7 +117,8 @@ namespace Complete
                 Fire ();
             }
             // Otherwise, if the fire button has just started being pressed...
-            else if (Input.GetButtonDown (m_FireButton))
+            else if (fireButtonDown)
+            // else if (Input.GetButtonDown (m_FireButton))
             {
                 // ... reset the fired flag and reset the launch force.
                 m_Fired = false;
@@ -65,7 +129,8 @@ namespace Complete
                 m_ShootingAudio.Play ();
             }
             // Otherwise, if the fire button is being held and the shell hasn't been launched yet...
-            else if (Input.GetButton (m_FireButton) && !m_Fired)
+            else if (fireButtonHeld && !m_Fired)
+            // else if (Input.GetButton (m_FireButton) && !m_Fired)
             {
                 // Increment the launch force and update the slider.
                 m_CurrentLaunchForce += m_ChargeSpeed * Time.deltaTime;
@@ -73,7 +138,7 @@ namespace Complete
                 m_AimSlider.value = m_CurrentLaunchForce;
             }
             // Otherwise, if the fire button is released and the shell hasn't been launched yet...
-            else if (Input.GetButtonUp (m_FireButton) && !m_Fired)
+            else if (fireButtonUp && !m_Fired)
             {
                 // ... launch the shell.
                 Fire ();
