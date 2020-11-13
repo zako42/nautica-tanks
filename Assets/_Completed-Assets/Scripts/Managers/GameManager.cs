@@ -2,6 +2,8 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using TanksML;
+
 
 namespace Complete
 {
@@ -47,6 +49,22 @@ namespace Complete
                     Instantiate(m_TankPrefab, m_Tanks[i].m_SpawnPoint.position, m_Tanks[i].m_SpawnPoint.rotation) as GameObject;
                 m_Tanks[i].m_PlayerNumber = i + 1;
                 m_Tanks[i].Setup();
+            }
+
+            // set them to target each other -- for now assume only 2 tanks
+            // if we want to set this up for more, will need to address later.
+            // Note that we would also need to create agents which can handle more than 1 enemy as well 
+            if (m_Tanks.Length >= 2)
+            {
+                GameObject tank1 = m_Tanks[0].m_Instance;
+                GameObject tank2 = m_Tanks[1].m_Instance;
+                ITankAgent agent1 = tank1.GetComponent<ITankAgent>();
+                ITankAgent agent2 = tank2.GetComponent<ITankAgent>();
+                if (agent1 != null && agent2 != null)
+                {
+                    agent1.SetTarget(tank2);
+                    agent2.SetTarget(tank1);
+                }
             }
         }
 
