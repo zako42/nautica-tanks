@@ -1,9 +1,17 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+using TanksML;
+
 
 namespace Complete
 {
     public class ShellExplosion : MonoBehaviour
     {
+        // We're adding this event trigger to pass data to listeners when shell explodes
+        public Action<ShellExplosion, Dictionary<int, float>> OnExplosion;
+
         public LayerMask m_TankMask;                        // Used to filter what the explosion affects, this should be set to "Players".
         public ParticleSystem m_ExplosionParticles;         // Reference to the particles that will play on explosion.
         public AudioSource m_ExplosionAudio;                // Reference to the audio that will play on explosion.
@@ -11,6 +19,8 @@ namespace Complete
         public float m_ExplosionForce = 1000f;              // The amount of force added to a tank at the centre of the explosion.
         public float m_MaxLifeTime = 2f;                    // The time in seconds before the shell is removed.
         public float m_ExplosionRadius = 5f;                // The maximum distance away from the explosion tanks can be and are still affected.
+
+        private Dictionary<int, float> damageReport = new Dictionary<int, float>();
 
 
         private void Start ()
@@ -50,7 +60,16 @@ namespace Complete
 
                 // Deal this damage to the tank.
                 targetHealth.TakeDamage (damage);
+
+                // add to damage report, so we can send to listensers
+                // note that tank might damage itself, so we need to add all damages
+                ITankAgent agent = targetRigidbody.GetComponent<ITankAgent>();
+                if (agent == null) continue;
+                damageReport.Add(agent.GetPlayerNumber(), damage);
             }
+
+            // once all damages are calculated, send out damage report
+            if (OnExplosion != null) OnExplosion.Invoke(this, damageReport);
 
             // Unparent the particles from the shell.
             m_ExplosionParticles.transform.parent = null;

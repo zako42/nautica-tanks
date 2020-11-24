@@ -23,6 +23,7 @@ namespace Complete
 
         private TankMovement m_Movement;                        // Reference to tank's movement script, used to disable and enable control.
         private TankShooting m_Shooting;                        // Reference to tank's shooting script, used to disable and enable control.
+        private TankHealth m_Health;
         private GameObject m_CanvasGameObject;                  // Used to disable the world space UI during the Starting and Ending phases of each round.
         private ITankAgent tankAgent;
 
@@ -32,6 +33,7 @@ namespace Complete
             // Get references to the components.
             m_Movement = m_Instance.GetComponent<TankMovement> ();
             m_Shooting = m_Instance.GetComponent<TankShooting> ();
+            m_Health = m_Instance.GetComponent<TankHealth>();
             m_CanvasGameObject = m_Instance.GetComponentInChildren<Canvas> ().gameObject;
             tankAgent = m_Instance.GetComponent<ITankAgent>();
 
@@ -84,8 +86,20 @@ namespace Complete
             m_Instance.transform.position = m_SpawnPoint.position;
             m_Instance.transform.rotation = m_SpawnPoint.rotation;
 
-            m_Instance.SetActive (false);
-            m_Instance.SetActive (true);
+            // m_Instance.SetActive (false);
+            // m_Instance.SetActive (true);
+
+            // NOTE:  the tutorial reloads the scene and re-runs Start() code for all components with the SetActive() above
+            // we dont want to do this, we want a quick state reset
+            // call new method below to handle it
+            QuickStateReset();
+        }
+
+        private void QuickStateReset()
+        {
+            m_Health.Reset();
+            m_Movement.Reset();
+            m_Shooting.Reset();
         }
     }
 }

@@ -73,6 +73,13 @@ namespace Complete
         }
 
 
+        public void Reset()
+        {
+            OnDisable();
+            OnEnable();
+        }
+
+
         private void Start ()
         {
             // The axes names are based on player number.

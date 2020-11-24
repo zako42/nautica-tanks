@@ -40,6 +40,12 @@ namespace Complete
             m_AimSlider.value = m_MinLaunchForce;
         }
 
+
+        public void Reset()
+        {
+            OnEnable();
+        }
+
         
         private void Awake()
         {
@@ -84,7 +90,6 @@ namespace Complete
                     {
                         fireButtonHeld = true;
                         fireButtonDown = false;
-                        Debug.unityLogger.Log("fire button held = " + fireButtonHeld);
                     }
                     else
                     {
@@ -154,6 +159,18 @@ namespace Complete
             // Create an instance of the shell and store a reference to it's rigidbody.
             Rigidbody shellInstance =
                 Instantiate (m_Shell, m_FireTransform.position, m_FireTransform.rotation) as Rigidbody;
+
+            if (agent != null)
+            {
+                // For agents: register as a listener to the ShellExplosion::OnExplosion event.
+                // This way we can use the damage data to set rewards.
+                // Rewards set in agent's OnTankShellHit() method.
+                var explosion = shellInstance.GetComponent<ShellExplosion>();
+                if (explosion)
+                {
+                    explosion.OnExplosion += agent.OnTankShellHit;
+                }
+            }
 
             // Set the shell's velocity to the launch force in the fire position's forward direction.
             shellInstance.velocity = m_CurrentLaunchForce * m_FireTransform.forward; 

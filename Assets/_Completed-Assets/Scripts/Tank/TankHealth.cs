@@ -1,10 +1,13 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEngine.UI;
 
 namespace Complete
 {
     public class TankHealth : MonoBehaviour
     {
+        public Action<float> OnTakeDamage;
+
         public float m_StartingHealth = 100f;               // The amount of health each tank starts with.
         public Slider m_Slider;                             // The slider to represent how much health the tank currently has.
         public Image m_FillImage;                           // The image component of the slider.
@@ -18,6 +21,7 @@ namespace Complete
         private float m_CurrentHealth;                      // How much health the tank currently has.
         private bool m_Dead;                                // Has the tank been reduced beyond zero health yet?
 
+        public float Health { get => m_CurrentHealth; }  // Added public getter for convenience
 
         private void Awake ()
         {
@@ -43,6 +47,15 @@ namespace Complete
         }
 
 
+        /// <summary>
+        /// Created to manually reset tank health when resetting game
+        /// </summary>
+        public void Reset()
+        {
+            OnEnable();
+        }
+
+
         public void TakeDamage (float amount)
         {
             // Reduce current health by the amount of damage done.
@@ -56,6 +69,8 @@ namespace Complete
             {
                 OnDeath ();
             }
+
+            if (OnTakeDamage != null) OnTakeDamage(amount);  // notify agent listeners of damage taken
         }
 
 
@@ -85,7 +100,7 @@ namespace Complete
             m_ExplosionAudio.Play();
 
             // Turn the tank off.
-            gameObject.SetActive (false);
+            // gameObject.SetActive (false);
         }
     }
 }
