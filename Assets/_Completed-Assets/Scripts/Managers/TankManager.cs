@@ -38,6 +38,7 @@ namespace Complete
             tankAgent = m_Instance.GetComponent<ITankAgent>();
 
             // Set the player numbers to be consistent across the scripts.
+            m_Instance.tag = "Tank" + m_PlayerNumber.ToString();
             m_Movement.m_PlayerNumber = m_PlayerNumber;
             m_Shooting.m_PlayerNumber = m_PlayerNumber;
             if (tankAgent != null)
@@ -83,8 +84,9 @@ namespace Complete
         // Used at the start of each round to put the tank into it's default state.
         public void Reset ()
         {
-            m_Instance.transform.position = m_SpawnPoint.position;
-            m_Instance.transform.rotation = m_SpawnPoint.rotation;
+            // maybe we should move this into the agent and add to ITankAgent??
+            m_Instance.transform.position = SpawnRandomizer.GetRandomSpawnPosition(m_SpawnPoint.gameObject);
+            m_Instance.transform.localEulerAngles = new Vector3(0f, SpawnRandomizer.GetRandomSpawnRotation(m_SpawnPoint.gameObject), 0f);
 
             // m_Instance.SetActive (false);
             // m_Instance.SetActive (true);

@@ -65,7 +65,16 @@ namespace Complete
                 // note that tank might damage itself, so we need to add all damages
                 ITankAgent agent = targetRigidbody.GetComponent<ITankAgent>();
                 if (agent == null) continue;
-                damageReport.Add(agent.GetPlayerNumber(), damage);
+
+                if (damageReport.ContainsKey(agent.GetPlayerNumber()))
+                {
+                    // if multiple parts of the tank are hit, we need to add up all the damage
+                    damageReport[agent.GetPlayerNumber()] += damage;
+                }
+                else
+                {
+                    damageReport.Add(agent.GetPlayerNumber(), damage);
+                }
             }
 
             // once all damages are calculated, send out damage report
@@ -78,7 +87,7 @@ namespace Complete
             m_ExplosionParticles.Play();
 
             // Play the explosion sound effect.
-            m_ExplosionAudio.Play();
+            // m_ExplosionAudio.Play();
 
             // Once the particles have finished, destroy the gameobject they are on.
             ParticleSystem.MainModule mainModule = m_ExplosionParticles.main;

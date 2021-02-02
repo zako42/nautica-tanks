@@ -10,12 +10,15 @@ namespace TanksML {
     /// </summary>
     public interface ITankAgent
     {
-        int GetPlayerNumber();
         float GetTankMovementValue();
         float GetTankTurnValue();
         float GetTankFiredValue();
 
+        int GetPlayerNumber();
         void SetPlayerNumber(int number);
+        string GetPlayerTag();
+
+        GameObject GetTarget();
         void SetTarget(GameObject target);
 
         // implement these methods to handle rewards in your agent however you want

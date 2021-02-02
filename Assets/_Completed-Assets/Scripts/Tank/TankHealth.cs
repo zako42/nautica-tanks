@@ -22,6 +22,7 @@ namespace Complete
         private bool m_Dead;                                // Has the tank been reduced beyond zero health yet?
 
         public float Health { get => m_CurrentHealth; }  // Added public getter for convenience
+        public float NormalizedHealth { get => m_CurrentHealth / m_StartingHealth; }
 
         private void Awake ()
         {
@@ -90,14 +91,14 @@ namespace Complete
             m_Dead = true;
 
             // Move the instantiated explosion prefab to the tank's position and turn it on.
-            m_ExplosionParticles.transform.position = transform.position;
-            m_ExplosionParticles.gameObject.SetActive (true);
+            // m_ExplosionParticles.transform.position = transform.position;
+            // m_ExplosionParticles.gameObject.SetActive (true);
 
             // Play the particle system of the tank exploding.
-            m_ExplosionParticles.Play ();
+            // m_ExplosionParticles.Play ();
 
             // Play the tank explosion sound effect.
-            m_ExplosionAudio.Play();
+            // m_ExplosionAudio.Play();
 
             // Turn the tank off.
             // gameObject.SetActive (false);

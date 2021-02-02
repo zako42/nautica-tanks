@@ -3,6 +3,7 @@ using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Unity.MLAgents;
 
 
 namespace TanksML {
@@ -22,6 +23,7 @@ namespace TanksML {
 
         private GameObject[] tankGameobjects = new GameObject[numPlayers];
         private ITankAgent[] tankAgents = new ITankAgent[numPlayers];
+        private Agent[] agents = new Agent[numPlayers];
         private Complete.TankHealth[] tankHealth = new Complete.TankHealth[numPlayers];
         private bool resetgame = false;
 
@@ -54,11 +56,10 @@ namespace TanksML {
             for (int i=0; i < numPlayers; i++)
             {
                 Debug.AssertFormat(tankPrefabs[i] != null, "TrainingManager: No tank prefab found");
-                GameObject tank = Instantiate(tankPrefabs[i],
-                    tankManagers[i].m_SpawnPoint.position,
-                    tankManagers[i].m_SpawnPoint.rotation);
+                Vector3 spawnPosition = SpawnRandomizer.GetRandomSpawnPosition(tankManagers[i].m_SpawnPoint.gameObject);
+                Vector3 spawnRotation = new Vector3(0f, SpawnRandomizer.GetRandomSpawnRotation(tankManagers[i].m_SpawnPoint.gameObject), 0f);
+                GameObject tank = Instantiate(tankPrefabs[i], spawnPosition, Quaternion.Euler(spawnRotation));
                 tank.name = "Player" + i.ToString();
-                // TODO: spawn in random point within region instead of at point
 
                 tankManagers[i].m_Instance = tank;
                 tankManagers[i].m_PlayerNumber = i+1;
@@ -67,6 +68,7 @@ namespace TanksML {
                 // cache references
                 tankGameobjects[i] = tank;
                 tankAgents[i] = tank.GetComponent<ITankAgent>();
+                agents[i] = tank.GetComponent<Agent>();
                 tankHealth[i] = tank.GetComponent<Complete.TankHealth>();
             }
 
@@ -96,11 +98,13 @@ namespace TanksML {
 
         private void ResetGame()
         {
-            foreach (var tank in tankManagers)
+            for (int i=0; i < numPlayers; i++)
             {
-                tank.Reset();
-                tank.EnableControl();
+                agents[i].EndEpisode();
+                tankManagers[i].Reset();
+                tankManagers[i].EnableControl();
             }
+
             if (cameraControl) cameraControl.SetStartPositionAndSize();
         }
 
@@ -114,8 +118,21 @@ namespace TanksML {
         
         public void RunTraining()
         {
-            // if we need to reset the game, do it here.
-            // record any metrics or whatnot prior to ResetGame()
+            // this isn't the prettiest, but we need to reset the game if an agent gets to max steps
+            // agent expects that it will reset and get a fresh episode when it reaches max steps so we need to reset the game
+            // however, different agents may have different max_steps settings... so we need to just reset the whole game based on the agent with the least max_steps
+            // this is not totally necessary, but in our case, the agent's target might have unlimited max_steps and it might have hidden far away on the map.
+            // if we start a new episode and the target is hidden, it makes it harder for our agent to learn
+            for (int i=0; i < numPlayers; i++)
+            {
+                if (agents[i].StepCount >= agents[i].MaxStep-1)
+                {
+                    resetgame = true;
+                    break;
+                }
+            }
+
+            // If we need to reset the game, do it here. Record any metrics or whatnot prior to ResetGame()
             if (resetgame)
             {
                 ResetGame();
@@ -164,18 +181,32 @@ namespace TanksML {
         /// and they might hit a tank when we start the next episode (which is unfair).
         /// This wasn't needed by the normal Tanks game because when a player won,
         /// there were a couple seconds of UI ("you won", etc).
-        /// For our training, we want to cut out these delays ane run as fast as possible,
+        /// For our training, we want to cut out these delays and run as fast as possible,
         /// so we force clean everything out manually.
         /// </summary>
         public void DestroyShells()
         {
-            GameObject[] shells = GameObject.FindGameObjectsWithTag("Shell");
-            // Debug.unityLogger.Log(LOGTAG, "End game, found " + shells.Length.ToString() + " shells to destroy");
+            GameObject[] tank1shells = GameObject.FindGameObjectsWithTag("Tank1Shell");
+            GameObject[] tank2shells = GameObject.FindGameObjectsWithTag("Tank2Shell");
+            GameObject[] explosions = GameObject.FindGameObjectsWithTag("Explosion");
 
-            foreach (var shellobject in shells)
+            foreach (var shellobject in tank1shells)
             {
                 shellobject.SetActive(false);
                 Destroy(shellobject.gameObject);
+            }
+
+            foreach (var shellobject in tank2shells)
+            {
+                shellobject.SetActive(false);
+                Destroy(shellobject.gameObject);
+            }
+
+            foreach (var explosion in explosions)
+            {
+                ParticleSystem particles = explosion.GetComponent<ParticleSystem>();
+                if (particles) particles.Stop();
+                Destroy(explosion);
             }
         }
     }

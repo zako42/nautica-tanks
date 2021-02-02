@@ -87,13 +87,59 @@ namespace Complete
             m_TurnAxisName = "Horizontal" + m_PlayerNumber;
 
             // Store the original pitch of the audio source.
-            m_OriginalPitch = m_MovementAudio.pitch;
+            // m_OriginalPitch = m_MovementAudio.pitch;
         }
 
 
-        private void Update ()
+        // private void Update ()
+        // {
+        //     // Store the value of both input axes.
+        //     if (agentControl)
+        //     {
+        //         m_MovementInputValue = agent.GetTankMovementValue();
+        //         m_TurnInputValue = agent.GetTankTurnValue();
+        //     }
+        //     else
+        //     {
+        //         m_MovementInputValue = Input.GetAxis (m_MovementAxisName);
+        //         m_TurnInputValue = Input.GetAxis (m_TurnAxisName);
+        //     }
+
+        //     // EngineAudio ();
+        // }
+
+
+        private void EngineAudio ()
         {
-            // Store the value of both input axes.
+            // // If there is no input (the tank is stationary)...
+            // if (Mathf.Abs (m_MovementInputValue) < 0.1f && Mathf.Abs (m_TurnInputValue) < 0.1f)
+            // {
+            //     // ... and if the audio source is currently playing the driving clip...
+            //     if (m_MovementAudio.clip == m_EngineDriving)
+            //     {
+            //         // ... change the clip to idling and play it.
+            //         m_MovementAudio.clip = m_EngineIdling;
+            //         m_MovementAudio.pitch = Random.Range (m_OriginalPitch - m_PitchRange, m_OriginalPitch + m_PitchRange);
+            //         m_MovementAudio.Play ();
+            //     }
+            // }
+            // else
+            // {
+            //     // Otherwise if the tank is moving and if the idling clip is currently playing...
+            //     if (m_MovementAudio.clip == m_EngineIdling)
+            //     {
+            //         // ... change the clip to driving and play.
+            //         m_MovementAudio.clip = m_EngineDriving;
+            //         m_MovementAudio.pitch = Random.Range(m_OriginalPitch - m_PitchRange, m_OriginalPitch + m_PitchRange);
+            //         m_MovementAudio.Play();
+            //     }
+            // }
+        }
+
+
+        private void FixedUpdate ()
+        {
+            // Adjust the rigidbodies position and orientation in FixedUpdate.
             if (agentControl)
             {
                 m_MovementInputValue = agent.GetTankMovementValue();
@@ -105,41 +151,6 @@ namespace Complete
                 m_TurnInputValue = Input.GetAxis (m_TurnAxisName);
             }
 
-            EngineAudio ();
-        }
-
-
-        private void EngineAudio ()
-        {
-            // If there is no input (the tank is stationary)...
-            if (Mathf.Abs (m_MovementInputValue) < 0.1f && Mathf.Abs (m_TurnInputValue) < 0.1f)
-            {
-                // ... and if the audio source is currently playing the driving clip...
-                if (m_MovementAudio.clip == m_EngineDriving)
-                {
-                    // ... change the clip to idling and play it.
-                    m_MovementAudio.clip = m_EngineIdling;
-                    m_MovementAudio.pitch = Random.Range (m_OriginalPitch - m_PitchRange, m_OriginalPitch + m_PitchRange);
-                    m_MovementAudio.Play ();
-                }
-            }
-            else
-            {
-                // Otherwise if the tank is moving and if the idling clip is currently playing...
-                if (m_MovementAudio.clip == m_EngineIdling)
-                {
-                    // ... change the clip to driving and play.
-                    m_MovementAudio.clip = m_EngineDriving;
-                    m_MovementAudio.pitch = Random.Range(m_OriginalPitch - m_PitchRange, m_OriginalPitch + m_PitchRange);
-                    m_MovementAudio.Play();
-                }
-            }
-        }
-
-
-        private void FixedUpdate ()
-        {
-            // Adjust the rigidbodies position and orientation in FixedUpdate.
             Move ();
             Turn ();
         }
@@ -148,7 +159,7 @@ namespace Complete
         private void Move ()
         {
             // Create a vector in the direction the tank is facing with a magnitude based on the input, speed and the time between frames.
-            Vector3 movement = transform.forward * m_MovementInputValue * m_Speed * Time.deltaTime;
+            Vector3 movement = transform.forward * m_MovementInputValue * m_Speed * Time.fixedDeltaTime;
 
             // Apply this movement to the rigidbody's position.
             m_Rigidbody.MovePosition(m_Rigidbody.position + movement);
@@ -158,7 +169,7 @@ namespace Complete
         private void Turn ()
         {
             // Determine the number of degrees to be turned based on the input, speed and time between frames.
-            float turn = m_TurnInputValue * m_TurnSpeed * Time.deltaTime;
+            float turn = m_TurnInputValue * m_TurnSpeed * Time.fixedDeltaTime;
 
             // Make this into a rotation in the y axis.
             Quaternion turnRotation = Quaternion.Euler (0f, turn, 0f);
