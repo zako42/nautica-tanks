@@ -160,8 +160,6 @@ namespace TanksML {
                 textOutput.output += "<b>Cannon Cooldown: </b>" + shooting.cooldown.ToString() + "\n";
                 textOutput.output += "<b>Total Reward: </b>" + GetCumulativeReward().ToString() + "\n";
             }
-
-            // Unity.MLAgents.Monitor.Log(gameObject.name, GetCumulativeReward());
         }
 
         // when using discrete actions, we can MASK actions that are impossible,

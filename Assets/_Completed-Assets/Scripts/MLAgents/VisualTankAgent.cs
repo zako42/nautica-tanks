@@ -19,7 +19,7 @@ namespace TanksML {
         private Complete.TankShooting shooting;
         private AgentTextDisplayer textOutput;
 
-        private const string LOGTAG = "SimpleTankAgent";
+        private const string LOGTAG = "VisualTankAgent";
 
 
         /// <summary>
@@ -157,8 +157,6 @@ namespace TanksML {
                 textOutput.output += "<b>Enemy Health: </b>" + targetHealth.NormalizedHealth.ToString() + "\n";
                 textOutput.output += "<b>Cannon Cooldown: </b>" + shooting.cooldown.ToString() + "\n";
             }
-
-            Unity.MLAgents.Monitor.Log(gameObject.name, GetCumulativeReward());
         }
 
         // when using discrete actions, we can MASK actions that are impossible,
@@ -308,4 +306,3 @@ namespace TanksML {
         }
     }
 }
-
