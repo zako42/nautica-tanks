@@ -17,7 +17,6 @@ namespace TanksML {
         private Complete.TankHealth health;
         private Complete.TankHealth targetHealth;
         private Complete.TankShooting shooting;
-        private AgentTextDisplayer textOutput;
 
         private const string LOGTAG = "VisualTankAgent";
 
