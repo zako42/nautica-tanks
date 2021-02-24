@@ -1,0 +1,130 @@
+# sample config file for tanks tutorial
+# NOTE:  YAML files are sensitive to indents!  wrong indent level can mess things up!
+
+# engine settings below are global to training session, kind of like using command line arguments
+# these below are like having defaults that can be overridden by command line arguments
+engine_settings:
+  time_scale: 90.0  # equivalent to --time-scale=90.0
+  # no_graphics: true  # equivalent to --no-graphics
+
+  # REMEMBER if using visual observations, you CANNOT use --no-graphics
+
+behaviors:
+  SimpleTank:  # settings for SimpleTank
+
+    trainer_type: ppo
+    # below are hyperparameter settings
+    # settings below are defaults, just included here to make it easy for you to tweak them
+    # hyperparameters:
+    #   batch_size: 1024
+    #   buffer_size: 10240
+    #   learning_rate: 3.0e-4
+    #   learning_rate_schedule: linear
+    #   # parameters specific to PPO
+    #   beta: 5.0e-3
+    #   epsilon: 0.2
+    #   lambd: 0.95
+    #   num_epoch: 3
+
+    max_steps: 1.0e6  # 1M total steps of training
+    time_horizon: 360  # using agent 1800 max steps per episode, with decision frequency 5, so 360 experiences
+
+    reward_signals:  # SimpleTank reward types
+      extrinsic:  # "normal" rewards
+        strength: 1.0
+        gamma: 0.9
+
+      # gail:  # GAIL Settings (uncomment below to add it in)
+      #   strength: 0.08
+      #   gamma: 0.9
+      #   demo_path: .\demonstrations\discrete-1  # set this to be your /path/to/demo/files
+
+      # for demo_path above, this is relative to where you are calling mlagents-learn command from
+      # if you are at C:\users\lance\tanks, and running mlagents-learn there,
+      # and if you have a folder called C:\users\lance\tanks\demos\  which has demo files in there,
+      # you can set demo_path to be  demo_path: .\demos
+
+      curiosity:  # Curiosity Settings (uncomment below to add it in)
+        strength: 0.02
+        gamma: 0.9
+        encoding_size: 64
+        learning_rate: 3.0e-4
+
+
+  VisualTank1:  # settings for Visual Tank
+    trainer_type: ppo
+    max_steps: 1.0e7
+    time_horizon: 360
+    network_settings:
+      vis_encoding_type: simple
+    reward_signals:
+      extrinsic:
+        strength: 1.0
+        gamma: 0.999
+
+
+  CurriculumTank:  # settings for curriculum learning tank
+    trainer_type: ppo
+    max_steps: 1.5e4  # just for testing, so setting this to only 15k total steps
+    summary_freq: 1000  # this is how often command line output logged. but also used by curriculums
+    time_horizon: 360
+    reward_signals:
+      extrinsic:
+        strength: 1.0
+        gamma: 0.999
+
+
+  ZeroSumTank:  # settings for self-play zero-sum tank
+    trainer_type: ppo
+    max_steps: 1.0e7
+    time_horizon: 360
+    reward_signals:
+      extrinsic:
+        strength: 1.0
+        gamma: 0.999
+    self_play:
+      window: 10
+      play_against_latest_model_ratio: 0.5
+      save_steps: 50000
+      swap_steps: 2000
+
+
+# this section is for environment parameters
+# these can be used for curriculum learning and also for environment randomization
+# both mentioned in Tanks lecture 4
+environment_parameters:
+
+  # this is how you create an environment parameter.
+  # you can use this to help with dependency injection if you want to be able to tune game values in this config file
+  # you can also make use of environment parameter randomization,
+  # if you've set up your game code to make use of these values.
+  # this may be a good practice since researchers can tweak things without needing to know your game code!
+  # this wasn't a feature in older versions, so unfortunately I didn't know about it until more recently.
+  test_parameter: 123.0  
+
+  difficulty_level:
+    curriculum:
+      - name: lesson1
+        completion_criteria:
+          measure: progress  # measures progress (steps), could also be based on reward
+          behavior: CurriculumTank
+          signal_smoothing: true
+          min_lesson_length: 10
+          threshold: 0.25  # threshold to change curriculum is when measure (progress) gets to 0.25 of total steps
+        value: 1.0  # during lesson1 curriculum, our "difficulty_level" parameter is set to this value 1.0
+      - name: lesson2
+        completion_criteria:
+          measure: progress  # measures progress (steps), could also be based on reward
+          behavior: CurriculumTank
+          signal_smoothing: true
+          min_lesson_length: 10
+          threshold: 0.5  # threshold to change curriculum is when measure (progress) gets to 0.5 of total steps
+        value: 2.0  # during lesson2 curriculum, our "difficulty_level" parameter is set to this value 2.0
+      - name: lesson3
+        completion_criteria:
+          measure: progress  # measures progress (steps), could also be based on reward
+          behavior: CurriculumTank
+          signal_smoothing: true
+          min_lesson_length: 10
+          threshold: 0.75  # threshold to change curriculum is when measure (progress) gets to 0.75 of total steps
+        value: 3.0  # during lesson3 curriculum, our "difficulty_level" parameter is set to this value 3.0

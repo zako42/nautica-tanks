@@ -7,21 +7,20 @@ using Unity.MLAgents.Sensors;
 
 namespace TanksML {
     /// <summary>
-    /// Agent to control Tank using ML Agents.
-    /// Inherits from abstract class TankAgentBase.
-    /// TankAgentBase does some housekeeping for us so we don't need to worry about some things,
-    /// probably could be cleaner and better encapsulated, etc. but not enough time.
-    /// If you want to create a brand new agent, derive it from TankAgentBase.
-    /// Otherwise, feel free to take this agent and mess with it and tweak.
+    /// This is a duplicate of SimpleTankAgent, except it has some hooks for curriculum learning.
+    /// The agent pulls environment parameter "difficulty_level" and uses it to modify tank's health.
+    /// See OnEpisodeBegin() for more information.
     /// </summary>
-    public class SimpleZeroSumTankAgent : TankAgentBase
+    public class CurriculumTankAgent : TankAgentBase
     {
         public bool debug = true;
         private Complete.TankHealth health;
         private Complete.TankHealth targetHealth;
         private Complete.TankShooting shooting;
 
-        private const string LOGTAG = "SimpleZeroSumTankAgent";
+        float curriculumDifficultyLevel;  // This is value from current curriculum, environment parameter "difficulty_level"
+
+        private const string LOGTAG = "CurriculumTankAgent";
 
 
         /// <summary>
@@ -62,7 +61,27 @@ namespace TanksML {
         public override void OnEpisodeBegin()
         {
             base.OnEpisodeBegin();
-            // we're not doing anything here, but put stuff here if you want to mess around
+
+            // gets current curriculum "difficulty_level" parameter
+            // this value changes depending on what curriculum we are in (see config yaml file)
+            // if "difficulty_level" does not exist (for example if typo in config file, or wrong config file used),
+            // we provide a default of 1.0, so our variable below will always have some value
+            curriculumDifficultyLevel = Academy.Instance.EnvironmentParameters.GetWithDefault("difficulty_level", 1.0f);
+            // Note that the Academy Instance is a "singleton" object used by ML Agents.
+            // This singleton maintains a bunch of configuration and information, including our curriculum learning stuff.
+            // We use the singleton to get our environment parameter, created in the config yaml file.
+
+            // now that we have a value, we use it to do something here
+            // for now, we will set our agent's health, as proof of concept
+            // normal default health is 100.  We will reduce health at higher difficulty levels
+            // difficulty_level is set to change from 1.0 -> 2.0 -> 3.0
+            // we will take normal healgh and divide by difficulty level so we'll have 100, 50, 33.3
+            if (health)
+            {
+                health.Health = health.m_StartingHealth / curriculumDifficultyLevel;
+                Debug.unityLogger.Log(LOGTAG, "difficulty_level = " + Academy.Instance.EnvironmentParameters.GetWithDefault("difficulty_level", 0f).ToString());
+                Debug.unityLogger.Log(LOGTAG, "setting agent health to: " + health.Health.ToString());
+            }
         }
 
 
@@ -109,10 +128,10 @@ namespace TanksML {
 
             // we're adding a reward penalty here for when we're facing away from enemy,
             // hoping agent learns to generally face enemy to move toward them or fire at them
-            // if (relativeAngleObs < -0.5f || relativeAngleObs > 0.5f)
-            // {
-            //     AddReward(-0.001f);
-            // }
+            if (relativeAngleObs < -0.5f || relativeAngleObs > 0.5f)
+            {
+                AddReward(-0.001f);
+            }
 
             /* 2 */
             // calc distance
@@ -146,7 +165,7 @@ namespace TanksML {
             if (shooting) sensor.AddObservation(shooting.cooldown);
             else sensor.AddObservation(0f);
 
-            // AddReward(-0.0001f);  // tiny negative reward over time to incentivize agent to hurry up
+            AddReward(-0.0001f);  // tiny negative reward over time to incentivize agent to hurry up
 
             // do some debug outputting here
             if (debug && textOutput)
@@ -197,30 +216,30 @@ namespace TanksML {
         /// <param name="damages">Dictionary with { tank id : damage } damages dealt by explosion</param>
         public override void OnTankShellHit(Complete.ShellExplosion explosion, Dictionary<int, float> damages)
         {
-            // const float rewardPerDamage = 0.005f;  // max damage is 100, so max reward would be 0.5
-            // const float selfDamageFactor = -1.5f;  // anytime we damage ourself, assess large penalty
+            const float rewardPerDamage = 0.005f;  // max damage is 100, so max reward would be 0.5
+            const float selfDamageFactor = -1.5f;  // anytime we damage ourself, assess large penalty
 
-            // foreach (var entry in damages)
-            // {
-            //     if (entry.Key == this.playerNumber)
-            //     {
-            //         // argh... we hit ourself!!
-            //         AddReward(entry.Value * rewardPerDamage * selfDamageFactor);
-            //         // Debug.unityLogger.Log(LOGTAG, gameObject.name + " HIT OURSELF!  Reward = " + (entry.Value * rewardPerDamage * selfDamageFactor).ToString());
-            //     }
-            //     else
-            //     {
-            //         // yay... we hit someone else!!
-            //         AddReward(entry.Value * rewardPerDamage);
-            //         // Debug.unityLogger.Log(LOGTAG, gameObject.name + " HIT TARGET!  Reward = " + (entry.Value * rewardPerDamage).ToString());
-            //     }
-            // }
+            foreach (var entry in damages)
+            {
+                if (entry.Key == this.playerNumber)
+                {
+                    // argh... we hit ourself!!
+                    AddReward(entry.Value * rewardPerDamage * selfDamageFactor);
+                    // Debug.unityLogger.Log(LOGTAG, gameObject.name + " HIT OURSELF!  Reward = " + (entry.Value * rewardPerDamage * selfDamageFactor).ToString());
+                }
+                else
+                {
+                    // yay... we hit someone else!!
+                    AddReward(entry.Value * rewardPerDamage);
+                    // Debug.unityLogger.Log(LOGTAG, gameObject.name + " HIT TARGET!  Reward = " + (entry.Value * rewardPerDamage).ToString());
+                }
+            }
 
-            // // housekeeping, remove listener since explosion will be destroyed
-            // if (explosion)
-            // {
-            //     explosion.OnExplosion -= OnTankShellHit;  
-            // }
+            // housekeeping, remove listener since explosion will be destroyed
+            if (explosion)
+            {
+                explosion.OnExplosion -= OnTankShellHit;  
+            }
         }
 
         /// <summary>
@@ -231,9 +250,9 @@ namespace TanksML {
         /// <param name="damage">the amount of damage taken</param>
         public override void OnTakeDamage(float damage)
         {
-            // const float penaltyPerDamage = -0.005f;  // max damage is 100, so max penalty is -0.5
-            // AddReward(damage * penaltyPerDamage);
-            // // Debug.unityLogger.Log(LOGTAG, gameObject.name + " TOOK DAMAGE!  Reward = " + (damage * penaltyPerDamage).ToString());
+            const float penaltyPerDamage = -0.005f;  // max damage is 100, so max penalty is -0.5
+            AddReward(damage * penaltyPerDamage);
+            // Debug.unityLogger.Log(LOGTAG, gameObject.name + " TOOK DAMAGE!  Reward = " + (damage * penaltyPerDamage).ToString());
         }
 
         /// <summary>
@@ -319,4 +338,3 @@ namespace TanksML {
         }
     }
 }
-

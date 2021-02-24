@@ -21,7 +21,14 @@ namespace Complete
         private float m_CurrentHealth;                      // How much health the tank currently has.
         private bool m_Dead;                                // Has the tank been reduced beyond zero health yet?
 
-        public float Health { get => m_CurrentHealth; }  // Added public getter for convenience
+        public float Health
+        {
+            get => m_CurrentHealth;
+            set => m_CurrentHealth = value;
+            // added setter here, for curriculum learning to set health
+            // please don't have your agent set this and cheat!
+        }  
+
         public float NormalizedHealth { get => m_CurrentHealth / m_StartingHealth; }
 
         private void Awake ()

@@ -160,6 +160,16 @@ namespace TanksML {
                 textOutput.output += "<b>Cannon Cooldown: </b>" + shooting.cooldown.ToString() + "\n";
                 textOutput.output += "<b>Total Reward: </b>" + GetCumulativeReward().ToString() + "\n";
             }
+
+            if (GetCumulativeReward() == 0.0f)
+            {
+                Debug.unityLogger.Log(LOGTAG, "AGENT at value 0.0 rewards at step " + StepCount.ToString());
+            }
+
+            if (float.Parse(GetCumulativeReward().ToString()) == 0.0f)
+            {
+                Debug.unityLogger.Log(LOGTAG, "AGENT at string value 0.0 rewards at step " + StepCount.ToString());
+            }
         }
 
         // when using discrete actions, we can MASK actions that are impossible,
